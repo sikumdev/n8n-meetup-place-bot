@@ -1,0 +1,2111 @@
+{
+  "name": "개인프로젝트__2",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -3968,
+        928
+      ],
+      "id": "28c8f12d-e3dd-401c-ad85-90b2b02dfe57",
+      "name": "Telegram Trigger"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "28526995-4495-41df-a824-661258a6d73c",
+                    "leftValue": "={{ $('Telegram Trigger').item.json.callback_query?.data || $('Telegram Trigger').item.json.message?.text }}",
+                    "rightValue": "register_activity",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "=관심 질문 "
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "7d285c9a-f984-41af-a5c4-969494c7b0a6",
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.reply_to_message.text }}",
+                    "rightValue": "모임에서",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "관심 답변"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "48899e4f-7e5d-45b2-bd2e-ddc5b7d47fb3",
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+                    "rightValue": "/현황",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "현황 조회"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5e794302-abbd-4cb3-92a3-bd455c9e6953",
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+                    "rightValue": "/삭제",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "삭제"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "6747f5a9-39d1-4c49-abcb-cd5196dc85d1",
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+                    "rightValue": "/봇",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -3296,
+        1072
+      ],
+      "id": "92cf4348-e8e6-4264-bda3-f32e1e98df1a",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Airtable에서 검색된 모든 레코드를 가져옵니다.\nconst items = $input.all();\n\nif (items.length === 0) {\n  return [{ json: { text: \"📍 현재 등록된 출발지가 없습니다.\" } }];\n}\n\n// 2. 각 레코드에서 이름과 장소를 안전하게 추출합니다.\nconst list = items.map((item, index) => {\n  // fields가 없을 경우를 대비해 빈 객체({})를 기본값으로 설정\n  const fields = item.json.fields || item.json || {}; \n  const name = fields.user_name || \"이름없음\";\n  const location = fields.location_name || \"장소미정\";\n  \n  return `${index + 1}. ${name}: ${location}`;\n}).join('\\n');\n\n// 3. 최종 메시지 형식\nconst finalMessage = `🔍 **현재 출발지 등록 현황**\\n\\n${list}\\n\\n💡 더 등록할 분이 없다면\\n\\n 📅 장소 추천 버튼을 눌러주세요!`;\n\nreturn [{ json: { text: finalMessage } }];\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2432,
+        1184
+      ],
+      "id": "f27da4d8-8282-4f41-80ad-4348317ca030",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "출발지 데이터 ",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID/AIRTABLE_TABLE_ID"
+        },
+        "filterByFormula": "=AND({user_id} = '{{ $node[\"Telegram Trigger\"].json[\"message\"][\"from\"][\"id\"] }}',\n{chat_id} = '{{ $node[\"Telegram Trigger\"].json[\"message\"][\"chat\"][\"id\"] }}')",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -3520,
+        1120
+      ],
+      "id": "d0b63d1d-6d26-4e84-9c73-260468ed2fdf",
+      "name": "Search records3",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5f7cd47f-1b58-41da-a6e8-41d38ec2a748",
+              "leftValue": "={{ $json.message.new_chat_members}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -3744,
+        928
+      ],
+      "id": "0b1118e3-d752-49c0-b07f-375c579c931c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "✨ *모임 장소 추천 봇에 오신 것을 환영합니다\\!*\n\n우리 모임의 최적의 장소를 찾아드릴게요\\! 아래 기능을 이용해 보세요\\.\n\n📍 *내 위치 설정* \\| 출발지 등록/수정\n🏃 *활동 설정* \\| 관심 활동 등록/수정\n✨ *장소 추천* \\| 약속 날짜 선택 시 최적의 장소 추천\\!\n\n──────────────────\n\n⚙️ *관리 및 삭제 안내*\n\n📊 현황 확인: `/현황` 입력\n\n*🗑️ 삭제 방법 *\n\n• `/삭제 출발지` : 내 출발지 정보 삭제\n• `/삭제 활동` : 내 관심 활동 정보 삭제\n• **`/삭제 전체`** : 내 모든 정보 삭제 \\(불참 시 필수\\)\n\n약속에 참여하지 못하게 될 경우, 원활한 추천을 위해 꼭 `/삭제 전체`를 부탁드립니다\\! 😊",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "📍 내 출발지 등록",
+                    "additionalFields": {
+                      "url": "=https://t.me/YOUR_BOT/address?startapp={{ $('Telegram Trigger').item.json.message.chat.id }}"
+                    }
+                  },
+                  {
+                    "text": "🏃 관심 활동 등록",
+                    "additionalFields": {
+                      "callback_data": "register_activity"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "📅 장소 추천 ",
+                    "additionalFields": {
+                      "url": "=https://t.me/YOUR_BOT/callback?startapp={{ $('Telegram Trigger').item.json.message.chat.id }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "AIRTABLE_BASE_ID": false,
+          "parse_mode": "MarkdownV2"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -3168,
+        544
+      ],
+      "id": "c36fc8f1-4450-492f-a399-3e459d7d33c1",
+      "name": "Send a text message6"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "출발지 데이터 ",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID/AIRTABLE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "location_name": "={{ $('Webhook').item.json.body.address }}",
+            "user_name": "={{ $('Webhook').item.json.body.user_name }}",
+            "chat_id": "={{ $('Webhook').item.json.body.chat_id }}",
+            "user_id": "={{ $('Webhook').item.json.body.user_id }}"
+          },
+          "matchingColumns": [
+            "user_id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_name",
+              "displayName": "user_name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "location_name",
+              "displayName": "location_name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "updated_at_location",
+              "displayName": "updated_at_location",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "updated_at_interest",
+              "displayName": "updated_at_interest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -5536,
+        784
+      ],
+      "id": "0c98e652-a743-4405-aecf-5449ddaec5f2",
+      "name": "Create or update a record"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aad1104a-39d5-4abd-9baf-ece81ada68a6",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -6224,
+        944
+      ],
+      "id": "40393082-6957-4d55-b003-b00b72cf38d4",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.callback_query.message.chat.id }}",
+        "text": "모임에서 하고 싶은 활동(예: 볼링,보드게임카페)을 채팅으로 입력해 주세요!",
+        "replyMarkup": "forceReply",
+        "forceReply": {
+          "force_reply": true
+        },
+        "additionalFields": {
+          "AIRTABLE_BASE_ID": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2720,
+        640
+      ],
+      "id": "1b174f02-de9f-40b2-a512-bb2a01011fbd",
+      "name": "Send a text message7"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "출발지 데이터 ",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID/AIRTABLE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('Telegram Trigger').item.json.message.from.id.toString() }}",
+            "interest": "={{ $('Telegram Trigger').item.json.message.text }}"
+          },
+          "matchingColumns": [
+            "user_id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_name",
+              "displayName": "user_name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "location_name",
+              "displayName": "location_name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -2560,
+        784
+      ],
+      "id": "fdb662de-f37a-4473-945b-12c53a7e3f59",
+      "name": "Create or update a record1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=✨관심 활동 등록 완료!\n\n🥳 모임에서 하고 싶은 활동으로 [{{ $json.fields.interest }}] 을(를) 등록했습니다!",
+        "additionalFields": {
+          "AIRTABLE_BASE_ID": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2336,
+        784
+      ],
+      "id": "9090b4c4-378d-4c74-99a2-522715b09b7f",
+      "name": "Send a text message9"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "17eb661e-4c9e-4877-b0d1-f24cd935b170",
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+                    "rightValue": "활동",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "활동"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9d123dbe-ce27-4a6b-a008-d3a54a6dde54",
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+                    "rightValue": "전체",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "전체"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -3072,
+        1840
+      ],
+      "id": "60a21a92-bb70-4421-8c42-48a0a9601a0b",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cf31f934-6b0d-464d-a244-21d78bec151c",
+              "leftValue": "={{ $('Search records3').item.json.interest }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2832,
+        1664
+      ],
+      "id": "b760fcc7-9c2c-4ddb-8342-4882a5c594ce",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "156c1bdf-dde6-4176-b9ea-ca5e965b1bba",
+              "leftValue": "={{ $('Search records3').item.json.user_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2832,
+        1808
+      ],
+      "id": "d7eece52-55a0-43b7-9ce6-8ffab6d5692b",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "출발지 데이터 ",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID/AIRTABLE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('Telegram Trigger').item.json.message.from.id.toString() }}",
+            "interest": "{{ null }}"
+          },
+          "matchingColumns": [
+            "user_id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_name",
+              "displayName": "user_name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "location_name",
+              "displayName": "location_name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at_location",
+              "displayName": "updated_at_location",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "updated_at_interest",
+              "displayName": "updated_at_interest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -2608,
+        1616
+      ],
+      "id": "7407231a-ca9c-4ae0-b7b0-4c34e5223eef",
+      "name": "Update record2"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=⚠️ 삭제할{{ $('Telegram Trigger').item.json.message.text.replace(/\\s?삭제/g, '').replace('/', '') }} 정보가 없습니다",
+        "additionalFields": {
+          "AIRTABLE_BASE_ID": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1872,
+        1808
+      ],
+      "id": "3091fa02-cd7d-48cc-8416-a736141ec5bd",
+      "name": "delete_fail"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.callback_query?.message.chat.id || $('Telegram Trigger').first().json.message?.chat.id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "AIRTABLE_BASE_ID": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2208,
+        1184
+      ],
+      "id": "f1b8fdca-de43-40f5-9287-bf0867411855",
+      "name": "view table"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Webhook').item.json.body.chat_id }}",
+        "text": "=✨ 출발지 등록 완료\n\n👤 사용자 :{{ $('Webhook').item.json.body.user_name }}님\n\n🏠 현재 저장된 출발지\n{{ $('Webhook').item.json.body.address }}",
+        "additionalFields": {
+          "AIRTABLE_BASE_ID": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -5344,
+        784
+      ],
+      "id": "c58d4ce9-4ff3-442d-9978-d6dec33afeef",
+      "name": "create/update message"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "callback",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -6224,
+        1376
+      ],
+      "id": "288f9049-9fc6-48ff-b6f7-27f258c8c9d3",
+      "name": "Webhook1"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "출발지 데이터 ",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID/AIRTABLE_TABLE_ID"
+        },
+        "filterByFormula": "={chat_id} ={{ $('Webhook1').item.json.body.chat_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -5776,
+        1376
+      ],
+      "id": "e64a7133-d52b-4299-9e06-bda0885590cf",
+      "name": "Search records4",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=현재 시각: {{ $now }}\n약속 요청 날짜: {{ $json.selected_date }}\n\n[분석용 통합 데이터]\n1. 참여자 현황\n   - 인원: {{ $json.participant_count }}명 ({{ $json.participants }})\n   - 출발지: {{ $json.locations }}\n   - 관심 활동: {{ $json.interests }}\n\n2. 날씨 데이터 (평균 {{ $json.weather.avg_temp }}°C 기준)\n   - 최저/최고: {{ $json.weather.min_temp }}°C / {{ $json.weather.max_temp }}°C\n   - 상태: {{ $json.weather.max_pop }}% / {{ $json.weather.status }}\n\n[🚨 알고리즘 실행 명령]\n1. **편차 15분 엄수**: 네가 추천할 역까지의 소요 시간을 시뮬레이션했을 때, 참여자 중 가장 빨리 도착하는 사람과 가장 늦게 도착하는 사람의 차이가 **15분을 넘지 않도록** 무게중심을 정교하게 조정해.\n2. **역추적 방식 적용**: 거리가 가장 먼 사람의 경로를 우선순위에 두고, 그가 이동하는 시간을 단축할 수 있는 역들을 먼저 검토해.\n3. **[SerpApi] 검색**: 결정된 '공평한 역' 주변에서 실제 운영 중인 장소를 검색해. 화려한 핫플이 아니어도 좋으니 접근성이 좋은 실내 장소를 제안해.\n4. **결과 출력**: 답변 형식 내의 참여자별 이동 시간을 **솔직하고 정확하게** 기재해. (편차가 15분을 넘으면 다시 계산할 것)",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=너는 다수의 출발지 데이터를 분석하여 모든 참여자의 이동 시간 '표준 편차'를 극한으로 줄이는 '데이터 기반 초공평 약속 플래너'야. \n\n### ⚖️ 초공평 선정 알고리즘 (위밋플레이스 로직)\n1. **15분 편차 제한 규칙 (15-min Gap Rule)**: \n   - [가장 오래 걸리는 인원]과 [가장 적게 걸리는 인원] 사이의 소요 시간 차이가 반드시 **15분 내외**가 되도록 장소를 선정해. \n   - 만약 특정 인원이 15분 만에 오는데 다른 인원이 50분 걸린다면, 그 장소는 즉시 탈락시키고 무게중심을 '가장 멀리 사는 사람' 쪽으로 더 가깝게 이동시켜.\n2. **이동 시간 균등화 (Time Balance)**: \n   - '유명한 핫플레이스'보다 '모두의 이동 시간이 가장 비슷한 역'을 우선해. \n   - 모든 참여자가 35~45분, 혹은 45~55분과 같이 일정한 시간 범위 내로 모일 수 있는 '시간적 평형점'을 찾아.\n3. **가중치 기반 역추적**: \n   - 가장 장거리에서 오는 참여자의 이동 경로(광역버스/급행노선)를 먼저 확보하고, 그 경로상의 역들 중 나머지 참여자들의 이동 시간과 15분 이내로 동기화되는 지점을 선정해.\n4. **실무적 인프라 검색**: \n   - 선정된 균형점 역 주변에서 [관심 활동]이 가능한 '실제 장소'를 [SerpApi]로 검색해.\n   - 평균 기온 5°C 이하/30°C 이상, 강수확률 30% 이상 시 반드시 '역과 직접 연결된 실내 시설'을 우선해.\n\n### ✍️ 답변 형식 (엄격 준수)\n🕒 **확인된 약속 시간**\n- [데이터상의 날짜 및 시각]\n\n🌦 **실시간 날씨 정보**\n- 🌡 최저 {{ $json.weather.min_temp }}°C / 최고 {{ $json.weather.max_pop }}°C (평균 {{ $json.weather.avg_temp }}°C)\n- ☔ 강수 확률: {{ $json.weather.max_pop }}%\n- 💡 [날씨 상황에 따른 실내/외 추천 사유]\n\n---\n\n📍 추천 1: [역이름] (근처에 '[실제 업체명]'이 있습니다)\n- ✨ 선정 이유: 위밋플레이스 로직에 따라 참여자 간 이동 시간 편차를 15분 이내로 줄인 최적의 균형점입니다.\n- 🔗 정보 링크: [SerpApi 결과 링크]\n\n🚇 **추천 1 지점까지의 참여자별 이동 시간**\n[👤 이름: 약 00분 형식으로 모든 참여자 리스트업]\n\n---\n(추천 2 동일 형식)\n\n💬 **플래너의 한마디**\n- \"가장 멀리서 오시는 분의 부담을 줄여, 전원이 15분 이내의 시간 차이로 모일 수 있는 가장 공평한 곳을 찾았습니다.\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -4880,
+        1376
+      ],
+      "id": "4a43d5c8-3273-4d37-9b4d-b9add8b68893",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -4880,
+        1600
+      ],
+      "id": "97a250b8-14ca-468f-9273-cf389ddf207d",
+      "name": "OpenAI Chat Model1"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "location_name"
+            },
+            {
+              "fieldToAggregate": "interest"
+            },
+            {
+              "fieldToAggregate": "user_name"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -5552,
+        1376
+      ],
+      "id": "9a62ac46-e019-4d01-96c6-ccd2afeed694",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "url": "https://serpapi.com/search.json",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            },
+            {
+              "name": "api_key",
+              "value": "YOUR_API_KEY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        -4752,
+        1600
+      ],
+      "id": "8ca81321-1f96-45ca-a6f1-6a1fb9c1d207",
+      "name": "SerpApi1"
+    },
+    {
+      "parameters": {
+        "operation": "5DayForecast",
+        "cityName": "Seoul, kr",
+        "language": "kr"
+      },
+      "type": "n8n-nodes-base.openWeatherMap",
+      "typeVersion": 1,
+      "position": [
+        -5328,
+        1376
+      ],
+      "id": "a3f9e002-174b-43c3-b44d-6c7bcdbd771a",
+      "name": "OpenWeatherMap1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Webhook1').item.json.body.chat_id }}",
+        "text": "={{ $json.output }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "=💛 추천1 카카오맵 ",
+                    "additionalFields": {
+                      "url": "=https://map.kakao.com/link/search/{{ $json.output.match(/📍 추천 1:\\s*(.*?)\\s*\\(/)[1].replace(/\"/g, \"\") }}"
+                    }
+                  },
+                  {
+                    "text": "💛 추천2 카카오맵",
+                    "additionalFields": {
+                      "url": "=https://map.kakao.com/link/search/{{ $json.output.match(/📍 추천 2:\\s*(.*?)\\s*\\(/)[1].replace(/\"/g, \"\") }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "AIRTABLE_BASE_ID": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -4528,
+        1376
+      ],
+      "id": "1b975fb5-4ef8-4816-ba12-962fcae5ae56",
+      "name": "recommend_message1"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "출발지 데이터 ",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID/AIRTABLE_TABLE_ID"
+        },
+        "filterByFormula": "={user_id} ={{ $json.body.user_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -6000,
+        944
+      ],
+      "id": "cdf2a36d-5808-48e6-87f9-259058c898b3",
+      "name": "Search records5",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a421b5b5-4c19-478e-8a83-a9e88b5d6a1c",
+              "leftValue": "={{ $node[\"Search records5\"].json.location_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -5776,
+        944
+      ],
+      "id": "1871f325-39c8-4d9e-a496-f3c652277a32",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "출발지 데이터 ",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID/AIRTABLE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "location_name": "={{ $('Webhook').item.json.body.address }}",
+            "user_name": "={{ $('Webhook').item.json.body.user_name }}",
+            "chat_id": "={{ $('Webhook').item.json.body.chat_id }}",
+            "user_id": "={{ $('Webhook').item.json.body.user_id }}"
+          },
+          "matchingColumns": [
+            "user_id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_name",
+              "displayName": "user_name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "location_name",
+              "displayName": "location_name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "updated_at_location",
+              "displayName": "updated_at_location",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "updated_at_interest",
+              "displayName": "updated_at_interest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -5552,
+        960
+      ],
+      "id": "6b7293fe-e5dc-4ed6-80d0-8a19621a0a45",
+      "name": "Create or update a record2"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.fields.chat_id }}",
+        "text": "=✅ 출발지 수정 완료\n\n👤 사용자: {{ $('Webhook').item.json.body.user_name }}님\n\n🏠 현재 저장된 출발지\n{{ $('Webhook').item.json.body.address }}",
+        "additionalFields": {
+          "AIRTABLE_BASE_ID": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -5328,
+        960
+      ],
+      "id": "69872d0e-fa69-45f3-9bdf-affcb9c94c46",
+      "name": "create/update message1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6d0151bd-930c-405b-ad1a-f7d4bcb5e20c",
+              "leftValue": "={{ $('Search records3').item.json.interest }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2784,
+        928
+      ],
+      "id": "18185619-3cde-42ec-b347-82091eed7a7e",
+      "name": "If5"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "출발지 데이터 ",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID/AIRTABLE_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('Telegram Trigger').item.json.message.from.id.toString() }}",
+            "interest": "={{ $('Telegram Trigger').item.json.message.text }}"
+          },
+          "matchingColumns": [
+            "user_id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_name",
+              "displayName": "user_name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "location_name",
+              "displayName": "location_name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -2560,
+        960
+      ],
+      "id": "14122983-60cb-4d62-bcdb-14cf2d8a010e",
+      "name": "Create or update a record3"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=📍 관심 활동 정보 수정 완료!\n\n🥳 모임에서 하고 싶은 활동이 [{{ $json.fields.interest }}] (으)로 변경되었습니다.",
+        "additionalFields": {
+          "AIRTABLE_BASE_ID": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2384,
+        960
+      ],
+      "id": "a3292ca7-4407-4a10-9c70-1e71ccce9d13",
+      "name": "Send a text message"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "출발지 데이터 ",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID/AIRTABLE_TABLE_ID"
+        },
+        "filterByFormula": "=chat_id ={{ $('Telegram Trigger').item.json.message.chat.id.toString() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -2656,
+        1184
+      ],
+      "id": "f5ba892c-5f89-4f28-a6ad-59a10d7363a8",
+      "name": "Search records"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRecord",
+        "base": {
+          "__rl": true,
+          "value": "AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "출발지 데이터 ",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/AIRTABLE_BASE_ID/AIRTABLE_TABLE_ID"
+        },
+        "id": "={{ $node[\"Search records3\"].json.id }}"
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -2608,
+        1856
+      ],
+      "id": "ffc2b7f4-d4ec-41ff-9bba-9a7e3ff30315",
+      "name": "Delete a record1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 노드 참조\nconst webhook = $('Webhook1').first().json.body;\nconst aggregate = $('Aggregate1').first().json;\nconst openWeather = $('OpenWeatherMap1').first().json; // 5일 예보 데이터\n\nconst targetDate = webhook.selected_date; // 사용자가 선택한 날짜 (예: 2026-01-10)\n\n// 2. 날씨 데이터에서 해당 날짜만 필터링하여 최고/최저 계산\nconst forecastList = openWeather.list || [];\nconst dayData = forecastList.filter(item => item.dt_txt.includes(targetDate));\n\nlet weatherInfo = {\n  min_temp: \"0.0\",\n  max_temp: \"0.0\",\n  avg_temp: \"0.0\",\n  max_pop: 0,\n  status: \"정보 없음\"\n};\n\nif (dayData.length > 0) {\n  const temps = dayData.map(item => item.main.temp);\n  const pops = dayData.map(item => item.pop);\n  \n  const min = Math.min(...temps);\n  const max = Math.max(...temps);\n  \n  weatherInfo = {\n    min_temp: min.toFixed(1),\n    max_temp: max.toFixed(1),\n    avg_temp: ((min + max) / 2).toFixed(1),\n    max_pop: Math.max(...pops) * 100,\n    status: dayData[Math.floor(dayData.length / 2)].weather[0].description // 낮 시간대 상태\n  };\n}\n\n// 3. 참여자 정보 정리\nconst nameList = aggregate.user_name || [];\nconst locationList = aggregate.location_name || [];\nconst interests = aggregate.interest || [];\n\n// 4. 최종 결과 반환\nreturn [{\n  json: {\n    selected_date: targetDate || \"날짜 미지정\",\n    participant_count: nameList.length,\n    participants: nameList.join(', '),\n    locations: locationList.join(' | '),\n    interests: interests.length > 0 ? (Array.isArray(interests) ? interests.join(', ') : interests) : \"맛집 및 핫플레이스\",\n    weather: weatherInfo // 계산된 날씨 정보\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5104,
+        1376
+      ],
+      "id": "c309abf2-88c1-4d5a-8c6f-9d8882ac5acd",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+                    "rightValue": "전체",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "00eb4bc5-06c2-4fcc-8b1c-84a0014977f5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "전체 현황"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b9f8380b-602d-496c-b0df-cf0e373dc891",
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+                    "rightValue": "/현황",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "내 현황"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -2880,
+        1328
+      ],
+      "id": "451c1f5e-329c-442f-bbf9-df14af16956b",
+      "name": "Switch2"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id.toString() }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "AIRTABLE_BASE_ID": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2448,
+        1376
+      ],
+      "id": "e182a6db-0c0e-4959-afc2-faaad2add571",
+      "name": "Send a text message1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Search 노드에서 넘어온 전체 아이템 가져오기\nconst items = $input.all();\nlet message = \"\";\n\n// 2. 검색 결과 유무 확인\nif (items.length === 0 || !items[0].json || Object.keys(items[0].json).length === 0) {\n    message = \"⚠️ 아직 등록된 정보가 없습니다.\\n\\n먼저 정보를 등록해주세요!\";\n} \nelse {\n    // 3. 내 정보 추출 (image_776c41 구조 반영)\n    const data = items[0].json;\n    \n    // Airtable 실제 컬럼명(image_777780)에 맞춰 매핑\n    const name = data['user_name'] || \"미등록\";\n    const addr = data['location_name'] || \"미등록\"; // 'address' 대신 'location_name' 사용\n    const interest = data['interest'] || \"미등록\";\n\n    message = \"👤 [나의 등록 정보 확인]\\n\\n\";\n    message += `🏷️ 성함: ${name}\\n`;\n    message += `📍 출발지: ${addr}\\n`;\n    message += `🎯 관심사: ${interest}\\n\\n`;\n    message += \"위 정보를 수정하시려면 다시 등록 과정을 진행해주세요.\";\n}\n\n// 4. n8n 표준 형식으로 반환\nreturn [{ json: { message: message } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2672,
+        1376
+      ],
+      "id": "bef6b9f7-449b-47e9-b28d-836b22548035",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.body.chat_id}}",
+        "text": "📅 약속 일정이 성공적으로 접수되었습니다!\n\n입력하신 정보를 바탕으로 가장 모이기 좋은 최적의 장소를 AI가 분석하고 있습니다.\n잠시만 기다려주시면 최상의 추천 리스트를 가져올게요! ✨",
+        "additionalFields": {
+          "AIRTABLE_BASE_ID": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -6000,
+        1376
+      ],
+      "id": "7b44e74d-032b-426b-a2ff-9fefdc3e66d9",
+      "name": "Send a text message2"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=❌ 활동 삭제 완료! \n\n👤 사용자 :\n {{ $json.fields.user_name }}\n\n🏠 현재 저장된 출발지\n{{ $json.fields.location_name }}\n\n🏃 관심 활동 : ",
+        "additionalFields": {
+          "AIRTABLE_BASE_ID": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2384,
+        1616
+      ],
+      "id": "54185c26-1277-4e9c-9ed0-aa149e00a16f",
+      "name": "Send a text message3"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=❌ 전체 삭제 완료!\n\n/현황 전체를 통해 확인 해보세요~!",
+        "additionalFields": {
+          "AIRTABLE_BASE_ID": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2384,
+        1856
+      ],
+      "id": "0be17d07-f329-4498-8d15-5803d5eb1e5e",
+      "name": "Send a text message4"
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a text message7",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "view table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records3": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search records3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message6": {
+      "main": [
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Search records5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message7": {
+      "main": [
+        []
+      ]
+    },
+    "Create or update a record1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update a record": {
+      "main": [
+        [
+          {
+            "node": "create/update message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Update record2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "delete_fail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Delete a record1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "delete_fail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update record2": {
+      "main": [
+        [
+          {
+            "node": "Send a text message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records4": {
+      "main": [
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "recommend_message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "OpenWeatherMap1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SerpApi1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenWeatherMap1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records5": {
+      "main": [
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "Create or update a record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create or update a record2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update a record2": {
+      "main": [
+        [
+          {
+            "node": "create/update message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If5": {
+      "main": [
+        [
+          {
+            "node": "Create or update a record1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create or update a record3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update a record3": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "view table": {
+      "main": [
+        []
+      ]
+    },
+    "Search records": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a record1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch2": {
+      "main": [
+        [
+          {
+            "node": "Search records",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message2": {
+      "main": [
+        [
+          {
+            "node": "Search records4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed",
+    "timezone": "Asia/Seoul",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}
