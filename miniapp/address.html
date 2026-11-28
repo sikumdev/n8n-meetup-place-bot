@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="robots" content="noindex">
+<title>출발지 등록 · 우리 어디서 봐</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root { --bg:#F2F4F6; --card:#FFFFFF; --ink:#191F28; --sub:#4E5968; --mute:#8B95A1; --blue:#3182F6; --blue-d:#1B64DA; --blue-bg:#E8F3FF; --red:#F04452; --red-bg:#FFEEEE; --green:#00754A; --green-bg:#E3F7EC; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.55 "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  main { max-width: 480px; margin: 0 auto; padding: 20px 16px 120px; }
+  .top { padding: 20px 4px; }
+  .top h1 { margin: 0; font-size: 26px; line-height: 1.35; font-weight: 700; letter-spacing: -0.03em; }
+  .top p { margin: 8px 0 0; color: var(--sub); }
+  .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 12px; }
+  .label { font-size: 13px; font-weight: 600; color: var(--mute); margin-bottom: 8px; }
+  .addr { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; word-break: keep-all; }
+  .addr-sub { font-size: 13px; color: var(--mute); margin-top: 2px; }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .row .grow { flex: 1; min-width: 0; }
+  button { font: inherit; border: 0; cursor: pointer; border-radius: 12px; font-weight: 700; }
+  .btn-ghost { background: var(--bg); color: var(--sub); padding: 9px 14px; font-size: 13.5px; white-space: nowrap; }
+  .btn-primary { background: var(--blue); color: #fff; width: 100%; height: 56px; border-radius: 16px; font-size: 17px; }
+  .btn-primary:disabled { background: #C9E2FF; cursor: default; }
+  .btn-primary:not(:disabled):active { background: var(--blue-d); }
+  #search { border-radius: 14px; overflow: hidden; height: 420px; background: #F9FAFB; }
+  .hint { font-size: 12.5px; color: var(--mute); margin-top: 10px; }
+  .picked { background: var(--blue-bg); }
+  .picked .label { color: var(--blue-d); }
+  .toast { border-radius: 12px; padding: 12px 14px; font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .toast.ok { background: var(--green-bg); color: var(--green); }
+  .toast.bad { background: var(--red-bg); color: var(--red); }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; background: linear-gradient(rgba(242,244,246,0), var(--bg) 28%); padding: 28px 16px 20px; }
+  .bar > div { max-width: 448px; margin: 0 auto; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <h1 id="title">어디에서<br>출발하세요?</h1>
+    <p id="who"></p>
+  </div>
+
+  <div id="toast" class="toast ok" hidden></div>
+
+  <div id="pickedCard" class="card picked" hidden>
+    <div class="label">고른 주소</div>
+    <div class="row">
+      <div class="grow">
+        <div id="pickedAddr" class="addr"></div>
+        <div id="pickedSub" class="addr-sub"></div>
+      </div>
+      <button id="again" class="btn-ghost" type="button">다시 찾기</button>
+    </div>
+  </div>
+
+  <div id="searchCard" class="card">
+    <div class="label">주소 찾기</div>
+    <div id="search"></div>
+    <div class="hint">도로명 · 지번 · 건물 이름으로 찾을 수 있어요. 동 · 호수는 저장하지 않아요. 이미 등록했다면 새 주소로 바뀌어요.</div>
+  </div>
+</main>
+
+<div class="bar"><div>
+  <button id="save" class="btn-primary" type="button" disabled>주소를 골라 주세요</button>
+</div></div>
+
+<script src="https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script>
+(function () {
+  // n8n이 주소를 받는 곳 (텔레그램 입구 워크플로우의 "미니앱 · 주소 등록")
+  var SAVE_URL = "https://guilelessly-theroid-tawny.ngrok-free.dev/webhook/meetup-address";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var info = (tg && tg.initDataUnsafe) || {};
+  var preview = new URLSearchParams(location.search).get("preview");   // 브라우저에서 화면만 볼 때
+  var user = info.user || (preview ? { id: 0, first_name: "미리보기" } : null);
+  var chatId = info.start_param || (user ? String(user.id) : "");
+  var userName = user ? [user.first_name, user.last_name].filter(Boolean).join(" ") : "";
+  var picked = null;
+  var sending = false;
+
+  if (tg) { tg.ready(); tg.expand(); }
+
+  function toast(msg, kind) { var t = $("toast"); t.textContent = msg; t.className = "toast " + (kind || "ok"); t.hidden = false; window.scrollTo({ top: 0, behavior: "smooth" }); }
+  function render() {
+    $("pickedCard").hidden = !picked; $("searchCard").hidden = !!picked;
+    $("title").innerHTML = picked ? "이 주소가<br>맞나요?" : "어디에서<br>출발하세요?";
+    var s = $("save");
+    s.disabled = !picked || sending || !user;
+    s.textContent = sending ? "저장하는 중…" : (picked ? "이 주소로 등록하기" : "주소를 골라 주세요");
+  }
+  function openSearch() {
+    $("search").innerHTML = "";
+    var Postcode = (window.kakao && kakao.Postcode) || (window.daum && daum.Postcode);
+    if (!Postcode) { $("search").innerHTML = '<div style="padding:16px;color:#8B95A1">주소 검색을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.</div>'; return; }
+    new Postcode({
+      width: "100%", height: "100%",
+      oncomplete: function (d) {
+        picked = { address: d.roadAddress || d.jibunAddress || d.address, sub: [d.buildingName, d.bname].filter(Boolean).join(" · ") };
+        $("pickedAddr").textContent = picked.address; $("pickedSub").textContent = picked.sub;
+        render(); window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }).embed($("search"));
+  }
+
+  $("again").onclick = function () { picked = null; render(); openSearch(); };
+  $("save").onclick = function () {
+    if (!picked || sending || !user) return;
+    if (preview) { toast("미리보기라서 저장하지는 않았어요."); return; }
+    sending = true; render();
+    fetch(SAVE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, user_id: String(user.id), user_name: userName, address: picked.address })
+    }).then(function (res) {
+      if (!res.ok) throw new Error("status " + res.status);
+      toast("출발지를 보냈어요. 채팅방에서 결과를 확인해 주세요.");
+      setTimeout(function () { if (tg) tg.close(); }, 1200);
+    }).catch(function () {
+      sending = false; render();
+      toast("저장하지 못했어요. 잠시 뒤 다시 눌러 주세요.", "bad");
+    });
+  };
+
+  if (user) { $("who").textContent = userName + "님의 출발지"; }
+  else { $("who").textContent = ""; toast("텔레그램 채팅방의 '내 출발지 등록' 버튼으로 열어 주세요.", "bad"); }
+  render(); openSearch();
+})();
+</script>
+</body>
+</html>

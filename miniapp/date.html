@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="robots" content="noindex">
+<title>장소 추천 · 우리 어디서 봐</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root { --bg:#F2F4F6; --card:#FFFFFF; --ink:#191F28; --sub:#4E5968; --mute:#8B95A1; --blue:#3182F6; --blue-d:#1B64DA; --blue-bg:#E8F3FF; --red:#F04452; --red-bg:#FFEEEE; --green:#00754A; --green-bg:#E3F7EC; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.55 "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  main { max-width: 480px; margin: 0 auto; padding: 20px 16px 120px; }
+  .top { padding: 20px 4px; }
+  .top h1 { margin: 0; font-size: 26px; line-height: 1.35; font-weight: 700; letter-spacing: -0.03em; }
+  .top p { margin: 8px 0 0; color: var(--sub); }
+  .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 12px; }
+  .label { font-size: 13px; font-weight: 600; color: var(--mute); margin-bottom: 12px; }
+  .grid { display: grid; gap: 8px; }
+  .days { grid-template-columns: repeat(7, 1fr); }
+  .times { grid-template-columns: repeat(4, 1fr); }
+  .chip { font: inherit; border: 0; cursor: pointer; background: var(--bg); color: var(--ink); border-radius: 12px; padding: 10px 0; text-align: center; font-weight: 700; }
+  .chip small { display: block; font-size: 11px; font-weight: 600; color: var(--mute); }
+  .chip b { font-size: 16px; }
+  .chip.on { background: var(--blue); color: #fff; }
+  .chip.on small { color: #DCEBFF; }
+  .chip.sun small { color: var(--red); }
+  .chip.on.sun small { color: #FFD9DD; }
+  .hint { font-size: 12.5px; color: var(--mute); margin-top: 12px; }
+  .hint.warn { color: #B7791F; }
+  .btn-primary { font: inherit; border: 0; cursor: pointer; font-weight: 700; background: var(--blue); color: #fff; width: 100%; height: 56px; border-radius: 16px; font-size: 17px; }
+  .btn-primary:disabled { background: #C9E2FF; cursor: default; }
+  .btn-primary:not(:disabled):active { background: var(--blue-d); }
+  .toast { border-radius: 12px; padding: 12px 14px; font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .toast.ok { background: var(--green-bg); color: var(--green); }
+  .toast.bad { background: var(--red-bg); color: var(--red); }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; background: linear-gradient(rgba(242,244,246,0), var(--bg) 28%); padding: 28px 16px 20px; }
+  .bar > div { max-width: 448px; margin: 0 auto; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <h1>언제<br>만나나요?</h1>
+    <p>날짜와 시각을 고르면 모두에게 공평한 장소를 찾아 드려요.</p>
+  </div>
+
+  <div id="toast" class="toast ok" hidden></div>
+
+  <div class="card">
+    <div class="label">날짜</div>
+    <div id="days" class="grid days"></div>
+    <div id="dayHint" class="hint"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">시각</div>
+    <div id="times" class="grid times"></div>
+  </div>
+</main>
+
+<div class="bar"><div>
+  <button id="go" class="btn-primary" type="button"></button>
+</div></div>
+
+<script>
+(function () {
+  // n8n이 날짜와 시각을 받는 곳 (텔레그램 입구 워크플로우의 "미니앱 · 날짜와 시각")
+  var SEND_URL = "https://guilelessly-theroid-tawny.ngrok-free.dev/webhook/meetup-date";
+  var FORECAST_DAYS = 5;      // 날씨 예보는 5일 뒤까지만 나옴
+  var DAY_COUNT = 14;         // 오늘부터 2주
+  var TIMES = ["11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
+  var WEEK = ["일", "월", "화", "수", "목", "금", "토"];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var info = (tg && tg.initDataUnsafe) || {};
+  var preview = new URLSearchParams(location.search).get("preview");   // 브라우저에서 화면만 볼 때
+  var user = info.user || (preview ? { id: 0, first_name: "미리보기" } : null);
+  var chatId = info.start_param || (user ? String(user.id) : "");
+  var userName = user ? [user.first_name, user.last_name].filter(Boolean).join(" ") : "";
+  var dayIndex = 0, time = "19:00", sending = false;
+
+  if (tg) { tg.ready(); tg.expand(); }
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function dayAt(i) { var d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + i); return d; }
+  function ymd(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function toast(msg, kind) { var t = $("toast"); t.textContent = msg; t.className = "toast " + (kind || "ok"); t.hidden = false; window.scrollTo({ top: 0, behavior: "smooth" }); }
+
+  function render() {
+    $("days").innerHTML = "";
+    for (var i = 0; i < DAY_COUNT; i++) {
+      (function (i) {
+        var d = dayAt(i), b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip" + (i === dayIndex ? " on" : "") + (d.getDay() === 0 ? " sun" : "");
+        b.innerHTML = "<small>" + (i === 0 ? "오늘" : WEEK[d.getDay()]) + "</small><b>" + d.getDate() + "</b>";
+        b.onclick = function () { dayIndex = i; render(); };
+        $("days").appendChild(b);
+      })(i);
+    }
+    $("times").innerHTML = "";
+    TIMES.forEach(function (t) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "chip" + (t === time ? " on" : ""); b.textContent = t;
+      b.onclick = function () { time = t; render(); };
+      $("times").appendChild(b);
+    });
+    var late = dayIndex > FORECAST_DAYS - 1;
+    $("dayHint").className = "hint" + (late ? " warn" : "");
+    $("dayHint").textContent = late ? "5일보다 뒤의 약속은 아직 날씨 예보가 없어서, 날씨를 빼고 추천해요." : "약속 시각의 날씨를 보고 실내 · 실외 장소를 함께 고려해요.";
+    var d = dayAt(dayIndex), g = $("go");
+    g.disabled = sending || !user;
+    g.textContent = sending ? "보내는 중…" : (d.getMonth() + 1) + "월 " + d.getDate() + "일(" + WEEK[d.getDay()] + ") " + time + "으로 추천 받기";
+  }
+
+  $("go").onclick = function () {
+    if (sending || !user) return;
+    if (preview) { toast("미리보기라서 보내지는 않았어요."); return; }
+    sending = true; render();
+    fetch(SEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, user_id: String(user.id), user_name: userName, date: ymd(dayAt(dayIndex)), time: time })
+    }).then(function (res) {
+      if (!res.ok) throw new Error("status " + res.status);
+      toast("요청을 보냈어요. 채팅방에서 추천을 확인해 주세요.");
+      setTimeout(function () { if (tg) tg.close(); }, 1200);
+    }).catch(function () {
+      sending = false; render();
+      toast("보내지 못했어요. 잠시 뒤 다시 눌러 주세요.", "bad");
+    });
+  };
+
+  if (!user) toast("텔레그램 채팅방의 '장소 추천' 버튼으로 열어 주세요.", "bad");
+  render();
+})();
+</script>
+</body>
+</html>
